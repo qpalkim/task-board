@@ -16,7 +16,9 @@
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Malgun Gothic', sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Malgun Gothic",
+    sans-serif;
   background: var(--bg);
   color: var(--text);
 }
@@ -89,9 +91,11 @@ body {
 .card.priority-high {
   border-left-color: var(--high);
 }
+
 .card.priority-medium {
   border-left-color: var(--medium);
 }
+
 .card.priority-low {
   border-left-color: var(--low);
 }
@@ -117,12 +121,108 @@ body {
   font-weight: 600;
   color: #fff;
 }
+
 .badge-high {
   background: var(--high);
 }
+
 .badge-medium {
   background: var(--medium);
 }
+
 .badge-low {
   background: var(--low);
+}
+
+/* ---------- Skeleton ---------- */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: #d8dce3;
+  border-radius: 4px;
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.7),
+    transparent
+  );
+  animation: skeleton-loading 1.2s infinite;
+}
+
+@keyframes skeleton-loading {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.skeleton-card {
+  cursor: default;
+  pointer-events: none;
+}
+
+.skeleton-title {
+  width: 75%;
+  height: 16px;
+  margin-bottom: 10px;
+}
+
+.skeleton-badge {
+  width: 56px;
+  height: 20px;
+  border-radius: 10px;
+}
+
+.skeleton-date {
+  width: 72px;
+  height: 12px;
+}
+
+/* ---------- State ---------- */
+.state {
+  margin: 80px auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 500px;
+  padding: 24px;
+  text-align: center;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(9, 30, 66, 0.08);
+}
+
+.state h2 {
+  color: var(--text);
+  margin: 0;
+}
+
+.state p {
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.state-button {
+  border: none;
+  background: #10205a;
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s ease;
+}
+
+.state-button:hover {
+  background: #0b1746;
 }
