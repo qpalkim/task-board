@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { Task, Status } from "./types";
-import { ApiError, getTasks, updateTask } from "./api/client";
+import type { Task, Status, Priority } from "./types";
+import { ApiError, createTask, getTasks, updateTask } from "./api/client";
 import { Column } from "./components/Column";
 import SkeletonColumn from "./components/SkeletonColumn";
 import ErrorState from "./components/ErrorState";
 import EmptyState from "./components/EmptyState";
+import TaskDialog from "./components/TaskDialog";
 
 const COLUMNS: { status: Status; title: string }[] = [
   { status: "todo", title: "To Do" },
@@ -16,6 +17,8 @@ export default function Board() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   const requestSeq = useRef(0);
   const latestRequest = useRef(new Map<string, number>());
@@ -86,6 +89,46 @@ export default function Board() {
     }
   };
 
+  const handleCreate = async (input: {
+    title: string;
+    priority: Priority;
+    description?: string;
+  }) => {
+    const tempId = `temp-${Date.now()}`;
+
+    const optimisticTask: Task = {
+      id: tempId,
+      title: input.title,
+      description: input.description,
+      priority: input.priority,
+      status: "todo",
+      tags: [],
+      assignee: undefined,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      version: 0,
+    };
+
+    setTasks((prev) => [...prev, optimisticTask]);
+    setIsCreateOpen(false);
+
+    try {
+      const createdTask = await createTask({
+        title: input.title,
+        description: input.description,
+        priority: input.priority,
+        status: "todo",
+      });
+
+      setTasks((prev) =>
+        prev.map((task) => (task.id === tempId ? createdTask : task)),
+      );
+    } catch {
+      setTasks((prev) => prev.filter((task) => task.id !== tempId));
+      alert("태스크 생성에 실패했습니다.");
+    }
+  };
+
   const byStatus = useMemo(() => {
     const map: Record<Status, Task[]> = {
       todo: [],
@@ -108,19 +151,33 @@ export default function Board() {
 
   if (error) return <ErrorState error={error} onRetry={fetchTasks} />;
 
-  if (tasks.length === 0) return <EmptyState onCreate={() => {}} />;
+  if (tasks.length === 0)
+    return <EmptyState onCreate={() => setIsCreateOpen(true)} />;
 
   return (
-    <div className="board">
-      {COLUMNS.map((col) => (
-        <Column
-          key={col.status}
-          title={col.title}
-          status={col.status}
-          tasks={byStatus[col.status]}
-          onMove={moveTask}
+    <>
+      <button className="state-button" onClick={() => setIsCreateOpen(true)}>
+        태스크 추가
+      </button>
+      <div className="board">
+        {COLUMNS.map((col) => (
+          <Column
+            key={col.status}
+            title={col.title}
+            status={col.status}
+            tasks={byStatus[col.status]}
+            onMove={moveTask}
+          />
+        ))}
+      </div>
+
+      {isCreateOpen && (
+        <TaskDialog
+          open={isCreateOpen}
+          onClose={() => setIsCreateOpen(false)}
+          onCreate={handleCreate}
         />
-      ))}
-    </div>
+      )}
+    </>
   );
 }
