@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Task, Status } from "./types";
-import { getTasks, updateTask } from "./api/client";
+import { ApiError, getTasks, updateTask } from "./api/client";
 import { Column } from "./components/Column";
 import SkeletonColumn from "./components/SkeletonColumn";
 import ErrorState from "./components/ErrorState";
@@ -16,6 +16,9 @@ export default function Board() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+
+  const requestSeq = useRef(0);
+  const latestRequest = useRef(new Map<string, number>());
 
   const fetchTasks = async () => {
     setError(null);
@@ -48,6 +51,9 @@ export default function Board() {
     const target = tasks.find((t) => t.id === id);
     if (!target || target.status === status) return;
 
+    const requestId = ++requestSeq.current;
+    latestRequest.current.set(id, requestId);
+
     const previousTasks = tasks;
 
     setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, status } : t)));
@@ -58,8 +64,23 @@ export default function Board() {
         version: target.version,
       });
 
+      if (latestRequest.current.get(id) !== requestId) return;
+
       setTasks((prev) => prev.map((t) => (t.id === id ? updatedTask : t)));
     } catch (error) {
+      if (error instanceof ApiError && error.status === 409) {
+        if (latestRequest.current.get(id) !== requestId) return;
+
+        const current = (error.payload as { current: Task }).current;
+
+        setTasks((prev) =>
+          prev.map((t) => (t.id === current.id ? current : t)),
+        );
+
+        alert("다른 곳에서 먼저 수정된 카드입니다.");
+        return;
+      }
+
       setTasks(previousTasks);
       alert("카드 이동에 실패했습니다.");
     }
