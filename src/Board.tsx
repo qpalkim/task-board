@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Task, Status } from "./types";
-import { getTasks } from "./api/client";
+import { getTasks, updateTask } from "./api/client";
 import { Column } from "./components/Column";
 import SkeletonColumn from "./components/SkeletonColumn";
 import ErrorState from "./components/ErrorState";
@@ -44,8 +44,25 @@ export default function Board() {
   //   - updateTask(id, { status, version }) 로 서버에 반영
   //   - 실패(15%)하면 이전 상태로 되돌리고 사용자에게 알림
   //   - 같은 카드를 빠르게 연속 이동해도 최종 상태가 서버와 일치하도록
-  const moveTask = (id: string, status: Status) => {
+  const moveTask = async (id: string, status: Status) => {
+    const target = tasks.find((t) => t.id === id);
+    if (!target || target.status === status) return;
+
+    const previousTasks = tasks;
+
     setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, status } : t)));
+
+    try {
+      const updatedTask = await updateTask(id, {
+        status,
+        version: target.version,
+      });
+
+      setTasks((prev) => prev.map((t) => (t.id === id ? updatedTask : t)));
+    } catch (error) {
+      setTasks(previousTasks);
+      alert("카드 이동에 실패했습니다.");
+    }
   };
 
   const byStatus = useMemo(() => {
