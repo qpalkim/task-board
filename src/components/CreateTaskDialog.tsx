@@ -82,8 +82,12 @@ export default function CreateTaskDialog({
         </label>
 
         <div className="dialog-actions">
-          <button onClick={onClose}>취소</button>
-          <button onClick={handleSubmit}>생성</button>
+          <button className="state-button" onClick={onClose}>
+            취소
+          </button>
+          <button className="state-button" onClick={handleSubmit}>
+            생성
+          </button>
         </div>
       </div>
     </div>,

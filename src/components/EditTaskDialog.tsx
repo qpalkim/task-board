@@ -84,8 +84,12 @@ export default function EditTaskDialog({
         </label>
 
         <div className="dialog-actions">
-          <button onClick={onClose}>취소</button>
-          <button onClick={handleSubmit}>수정</button>
+          <button className="state-button" onClick={onClose}>
+            취소
+          </button>
+          <button className="state-button" onClick={handleSubmit}>
+            수정
+          </button>
         </div>
       </div>
     </div>,
