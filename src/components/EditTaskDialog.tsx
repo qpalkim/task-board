@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Priority, Task } from "../types";
 import "./TaskDialog.css";
 
@@ -51,7 +52,7 @@ export default function EditTaskDialog({
     onClose();
   };
 
-  return (
+  return createPortal(
     <div className="dialog-backdrop">
       <div className="dialog">
         <h2>태스크 수정</h2>
@@ -87,6 +88,7 @@ export default function EditTaskDialog({
           <button onClick={handleSubmit}>수정</button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
