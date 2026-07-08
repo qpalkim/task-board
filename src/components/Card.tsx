@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useState } from "react";
 import { Pencil, Trash } from "lucide-react";
 import type { Priority, Task } from "../types";
 import EditTaskDialog from "./EditTaskDialog";
@@ -24,7 +24,11 @@ interface CardProps {
   onDelete: (id: string) => void;
 }
 
-export function Card({ task, onUpdate, onDelete }: CardProps) {
+export const Card = memo(function Card({
+  task,
+  onUpdate,
+  onDelete,
+}: CardProps) {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
@@ -70,24 +74,28 @@ export function Card({ task, onUpdate, onDelete }: CardProps) {
         </div>
       </article>
 
-      <EditTaskDialog
-        open={isEditOpen}
-        task={task}
-        onClose={() => setIsEditOpen(false)}
-        onUpdate={(input) => {
-          onUpdate(task.id, input);
-          setIsEditOpen(false);
-        }}
-      />
+      {isEditOpen && (
+        <EditTaskDialog
+          open={isEditOpen}
+          task={task}
+          onClose={() => setIsEditOpen(false)}
+          onUpdate={(input) => {
+            onUpdate(task.id, input);
+            setIsEditOpen(false);
+          }}
+        />
+      )}
 
-      <DeleteTaskDialog
-        open={isDeleteOpen}
-        onClose={() => setIsDeleteOpen(false)}
-        onDelete={() => {
-          onDelete(task.id);
-          setIsDeleteOpen(false);
-        }}
-      />
+      {isDeleteOpen && (
+        <DeleteTaskDialog
+          open={isDeleteOpen}
+          onClose={() => setIsDeleteOpen(false)}
+          onDelete={() => {
+            onDelete(task.id);
+            setIsDeleteOpen(false);
+          }}
+        />
+      )}
     </>
   );
-}
+});

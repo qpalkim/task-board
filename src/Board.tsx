@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import type { Task, Status } from "./types";
+import type { Status } from "./types";
 import { Column } from "./components/Column";
 import { useTasks } from "./hooks/useTasks";
 import CreateTaskDialog from "./components/CreateTaskDialog";
@@ -27,14 +27,12 @@ export default function Board() {
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
-  const byStatus = useMemo(() => {
-    const map: Record<Status, Task[]> = {
-      todo: [],
-      "in-progress": [],
-      done: [],
+  const tasksByStatus = useMemo(() => {
+    return {
+      todo: tasks.filter((task) => task.status === "todo"),
+      "in-progress": tasks.filter((task) => task.status === "in-progress"),
+      done: tasks.filter((task) => task.status === "done"),
     };
-    for (const t of tasks) map[t.status].push(t);
-    return map;
   }, [tasks]);
 
   if (loading) {
@@ -63,7 +61,7 @@ export default function Board() {
             key={col.status}
             title={col.title}
             status={col.status}
-            tasks={byStatus[col.status]}
+            tasks={tasksByStatus[col.status]}
             onMove={moveTask}
             onUpdate={updateTask}
             onDelete={deleteTask}

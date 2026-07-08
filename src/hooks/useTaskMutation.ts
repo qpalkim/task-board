@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { Status, Task, TaskInput } from "../types";
 import {
   ApiError,
@@ -16,154 +16,173 @@ export function useTaskMutation({ tasks, setTasks }: UseTaskMutationProps) {
   const requestSeq = useRef(0);
   const latestRequest = useRef(new Map<string, number>());
 
-  const moveTask = async (id: string, status: Status) => {
-    const target = tasks.find((task) => task.id === id);
+  const taskRef = useRef<Task[]>(tasks);
 
-    if (!target || target.status === status) return;
+  useEffect(() => {
+    taskRef.current = tasks;
+  }, [tasks]);
 
-    const requestId = ++requestSeq.current;
-    latestRequest.current.set(id, requestId);
+  // 태스크 이동
+  const moveTask = useCallback(
+    async (id: string, status: Status) => {
+      const target = taskRef.current.find((task) => task.id === id);
 
-    const previousTasks = [...tasks];
+      if (!target || target.status === status) return;
 
-    setTasks((prev) =>
-      prev.map((task) => (task.id === id ? { ...task, status } : task)),
-    );
+      const requestId = ++requestSeq.current;
+      latestRequest.current.set(id, requestId);
 
-    try {
-      const updatedTask = await updateTaskApi(id, {
-        status,
-        version: target.version,
-      });
-
-      if (latestRequest.current.get(id) !== requestId) return;
+      const previousTasks = [...taskRef.current];
 
       setTasks((prev) =>
-        prev.map((task) => (task.id === id ? updatedTask : task)),
+        prev.map((task) => (task.id === id ? { ...task, status } : task)),
       );
-    } catch (error) {
-      if (error instanceof ApiError && error.status === 409) {
+
+      try {
+        const updatedTask = await updateTaskApi(id, {
+          status,
+          version: target.version,
+        });
+
         if (latestRequest.current.get(id) !== requestId) return;
 
-        const current = (error.payload as { current: Task }).current;
-
         setTasks((prev) =>
-          prev.map((task) => (task.id === current.id ? current : task)),
+          prev.map((task) => (task.id === id ? updatedTask : task)),
         );
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 409) {
+          if (latestRequest.current.get(id) !== requestId) return;
 
-        alert("다른 곳에서 먼저 수정된 카드입니다.");
-        return;
+          const current = (error.payload as { current: Task }).current;
+
+          setTasks((prev) =>
+            prev.map((task) => (task.id === current.id ? current : task)),
+          );
+
+          alert("다른 곳에서 먼저 수정된 카드입니다.");
+          return;
+        }
+
+        setTasks(previousTasks);
+        alert("카드 이동에 실패했습니다.");
       }
-
-      setTasks(previousTasks);
-      alert("카드 이동에 실패했습니다.");
-    }
-  };
+    },
+    [setTasks],
+  );
 
   // 태스크 생성 핸들러
-  const createTask = async (input: TaskInput) => {
-    const tempId = `temp-${Date.now()}`;
+  const createTask = useCallback(
+    async (input: TaskInput) => {
+      const tempId = `temp-${Date.now()}`;
 
-    const optimisticTask: Task = {
-      id: tempId,
-      title: input.title,
-      description: input.description,
-      priority: input.priority,
-      status: "todo",
-      tags: [],
-      assignee: undefined,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      version: 0,
-    };
-
-    setTasks((prev) => [...prev, optimisticTask]);
-
-    try {
-      const createdTask = await createTaskApi({
+      const optimisticTask: Task = {
+        id: tempId,
         title: input.title,
         description: input.description,
         priority: input.priority,
         status: "todo",
-      });
+        tags: [],
+        assignee: undefined,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        version: 0,
+      };
 
-      setTasks((prev) =>
-        prev.map((task) => (task.id === tempId ? createdTask : task)),
-      );
-    } catch {
-      setTasks((prev) => prev.filter((task) => task.id !== tempId));
-      alert("태스크 생성에 실패했습니다.");
-    }
-  };
+      setTasks((prev) => [...prev, optimisticTask]);
 
-  // 태스크 수정 핸들러
-  const updateTask = async (id: string, input: TaskInput) => {
-    const target = tasks.find((task) => task.id === id);
-
-    if (!target) return;
-
-    const requestId = ++requestSeq.current;
-    latestRequest.current.set(id, requestId);
-
-    const previousTasks = [...tasks];
-
-    setTasks((prev) =>
-      prev.map((task) =>
-        task.id === id
-          ? {
-              ...task,
-              title: input.title,
-              priority: input.priority,
-              description: input.description?.trim() || undefined,
-            }
-          : task,
-      ),
-    );
-
-    try {
-      const updatedTask = await updateTaskApi(id, {
-        title: input.title,
-        priority: input.priority,
-        description: input.description,
-        version: target.version,
-      });
-
-      if (latestRequest.current.get(id) !== requestId) return;
-
-      setTasks((prev) =>
-        prev.map((task) => (task.id === id ? updatedTask : task)),
-      );
-    } catch (error) {
-      if (error instanceof ApiError && error.status === 409) {
-        if (latestRequest.current.get(id) !== requestId) return;
-
-        const current = (error.payload as { current: Task }).current;
+      try {
+        const createdTask = await createTaskApi({
+          title: input.title,
+          description: input.description,
+          priority: input.priority,
+          status: "todo",
+        });
 
         setTasks((prev) =>
-          prev.map((task) => (task.id === current.id ? current : task)),
+          prev.map((task) => (task.id === tempId ? createdTask : task)),
         );
-
-        alert("다른 곳에서 먼저 수정된 카드입니다.");
-        return;
+      } catch {
+        setTasks((prev) => prev.filter((task) => task.id !== tempId));
+        alert("태스크 생성에 실패했습니다.");
       }
-      setTasks(previousTasks);
-      alert("태스크 수정에 실패했습니다.");
-    }
-  };
+    },
+    [setTasks],
+  );
+
+  // 태스크 수정 핸들러
+  const updateTask = useCallback(
+    async (id: string, input: TaskInput) => {
+      const target = taskRef.current.find((task) => task.id === id);
+
+      if (!target) return;
+
+      const requestId = ++requestSeq.current;
+      latestRequest.current.set(id, requestId);
+
+      const previousTasks = [...taskRef.current];
+
+      setTasks((prev) =>
+        prev.map((task) =>
+          task.id === id
+            ? {
+                ...task,
+                title: input.title,
+                priority: input.priority,
+                description: input.description?.trim() || undefined,
+              }
+            : task,
+        ),
+      );
+
+      try {
+        const updatedTask = await updateTaskApi(id, {
+          title: input.title,
+          priority: input.priority,
+          description: input.description,
+          version: target.version,
+        });
+
+        if (latestRequest.current.get(id) !== requestId) return;
+
+        setTasks((prev) =>
+          prev.map((task) => (task.id === id ? updatedTask : task)),
+        );
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 409) {
+          if (latestRequest.current.get(id) !== requestId) return;
+
+          const current = (error.payload as { current: Task }).current;
+
+          setTasks((prev) =>
+            prev.map((task) => (task.id === current.id ? current : task)),
+          );
+
+          alert("다른 곳에서 먼저 수정된 카드입니다.");
+          return;
+        }
+        setTasks(previousTasks);
+        alert("태스크 수정에 실패했습니다.");
+      }
+    },
+    [setTasks],
+  );
 
   // 태스크 삭제 핸들러
-  const deleteTask = async (id: string) => {
-    const previousTasks = [...tasks];
+  const deleteTask = useCallback(
+    async (id: string) => {
+      const previousTasks = [...taskRef.current];
 
-    setTasks((prev) => prev.filter((task) => task.id !== id));
+      setTasks((prev) => prev.filter((task) => task.id !== id));
 
-    try {
-      await deleteTaskApi(id);
-    } catch {
-      setTasks(previousTasks);
-      alert("태스크 삭제에 실패했습니다.");
-    }
-  };
+      try {
+        await deleteTaskApi(id);
+      } catch {
+        setTasks(previousTasks);
+        alert("태스크 삭제에 실패했습니다.");
+      }
+    },
+    [setTasks],
+  );
 
   return {
     moveTask,
