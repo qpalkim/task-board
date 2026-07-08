@@ -1,3 +1,5 @@
+import "./SkeletonColumn.css";
+
 interface SkeletonColumnProps {
   title: string;
 }
