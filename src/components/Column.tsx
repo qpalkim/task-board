@@ -1,4 +1,5 @@
-import type { Task, Status, Priority } from "../types";
+import { memo } from "react";
+import type { Task, Status, TaskInput } from "../types";
 import { Card } from "./Card";
 
 interface ColumnProps {
@@ -6,18 +7,11 @@ interface ColumnProps {
   status: Status;
   tasks: Task[];
   onMove: (id: string, status: Status) => void;
-  onUpdate: (
-    id: string,
-    input: {
-      title: string;
-      priority: Priority;
-      description?: string;
-    },
-  ) => void;
+  onUpdate: (id: string, input: TaskInput) => void;
   onDelete: (id: string) => void;
 }
 
-export function Column({
+export const Column = memo(function Column({
   title,
   status,
   tasks,
@@ -44,4 +38,4 @@ export function Column({
       </div>
     </section>
   );
-}
+});
