@@ -2,20 +2,18 @@
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.35);
-
   display: flex;
   justify-content: center;
   align-items: center;
+  z-index: 9999;
 }
 
 .dialog {
   width: 400px;
   max-width: calc(100% - 32px);
-
   background: white;
   border-radius: 12px;
   padding: 24px;
-
   display: flex;
   flex-direction: column;
   gap: 16px;
