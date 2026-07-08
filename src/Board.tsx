@@ -47,27 +47,33 @@ export default function Board() {
 
   if (error) return <ErrorState error={error} onRetry={fetchTasks} />;
 
-  if (tasks.length === 0)
-    return <EmptyState onCreate={() => setIsCreateOpen(true)} />;
-
   return (
     <>
-      <button className="state-button" onClick={() => setIsCreateOpen(true)}>
-        태스크 추가
-      </button>
-      <div className="board">
-        {COLUMNS.map((col) => (
-          <Column
-            key={col.status}
-            title={col.title}
-            status={col.status}
-            tasks={tasksByStatus[col.status]}
-            onMove={moveTask}
-            onUpdate={updateTask}
-            onDelete={deleteTask}
-          />
-        ))}
-      </div>
+      {tasks.length === 0 ? (
+        <EmptyState onCreate={() => setIsCreateOpen(true)} />
+      ) : (
+        <>
+          <button
+            className="state-button"
+            onClick={() => setIsCreateOpen(true)}
+          >
+            태스크 추가
+          </button>
+          <div className="board">
+            {COLUMNS.map((col) => (
+              <Column
+                key={col.status}
+                title={col.title}
+                status={col.status}
+                tasks={tasksByStatus[col.status]}
+                onMove={moveTask}
+                onUpdate={updateTask}
+                onDelete={deleteTask}
+              />
+            ))}
+          </div>
+        </>
+      )}
 
       {isCreateOpen && (
         <CreateTaskDialog
