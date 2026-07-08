@@ -2,10 +2,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Task, Status, Priority } from "./types";
 import { ApiError, createTask, getTasks, updateTask } from "./api/client";
 import { Column } from "./components/Column";
+import CreateTaskDialog from "./components/CreateTaskDialog";
 import SkeletonColumn from "./components/SkeletonColumn";
 import ErrorState from "./components/ErrorState";
 import EmptyState from "./components/EmptyState";
-import TaskDialog from "./components/TaskDialog";
 
 const COLUMNS: { status: Status; title: string }[] = [
   { status: "todo", title: "To Do" },
@@ -45,11 +45,6 @@ export default function Board() {
     fetchTasks();
   }, []);
 
-  // ⚠️ 서버에 저장하지 않고 로컬 상태만 바꾸는 "순진한" 이동입니다.
-  // TODO(P1): 낙관적 업데이트 + 실패 시 롤백 + 경쟁 상태 처리를 구현하세요.
-  //   - updateTask(id, { status, version }) 로 서버에 반영
-  //   - 실패(15%)하면 이전 상태로 되돌리고 사용자에게 알림
-  //   - 같은 카드를 빠르게 연속 이동해도 최종 상태가 서버와 일치하도록
   const moveTask = async (id: string, status: Status) => {
     const target = tasks.find((t) => t.id === id);
     if (!target || target.status === status) return;
@@ -57,7 +52,7 @@ export default function Board() {
     const requestId = ++requestSeq.current;
     latestRequest.current.set(id, requestId);
 
-    const previousTasks = tasks;
+    const previousTasks = [...tasks];
 
     setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, status } : t)));
 
@@ -74,6 +69,8 @@ export default function Board() {
       if (error instanceof ApiError && error.status === 409) {
         if (latestRequest.current.get(id) !== requestId) return;
 
+        setTasks(previousTasks);
+
         const current = (error.payload as { current: Task }).current;
 
         setTasks((prev) =>
@@ -89,7 +86,7 @@ export default function Board() {
     }
   };
 
-  const handleCreate = async (input: {
+  const handleCreateTask = async (input: {
     title: string;
     priority: Priority;
     description?: string;
@@ -126,6 +123,70 @@ export default function Board() {
     } catch {
       setTasks((prev) => prev.filter((task) => task.id !== tempId));
       alert("태스크 생성에 실패했습니다.");
+    }
+  };
+
+  const handleUpdateTask = async (
+    id: string,
+    input: {
+      title: string;
+      priority: Priority;
+      description?: string;
+    },
+  ) => {
+    const target = tasks.find((task) => task.id === id);
+
+    if (!target) return;
+
+    const requestId = ++requestSeq.current;
+    latestRequest.current.set(id, requestId);
+
+    const previousTasks = [...tasks];
+
+    setTasks((prev) =>
+      prev.map((task) =>
+        task.id === id
+          ? {
+              ...task,
+              title: input.title,
+              priority: input.priority,
+              description: input.description?.trim() || undefined,
+            }
+          : task,
+      ),
+    );
+
+    try {
+      const updatedTask = await updateTask(id, {
+        title: input.title,
+        priority: input.priority,
+        description: input.description,
+        version: target.version,
+      });
+
+      if (latestRequest.current.get(id) !== requestId) return;
+
+      setTasks((prev) =>
+        prev.map((task) => (task.id === id ? updatedTask : task)),
+      );
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 409) {
+        if (latestRequest.current.get(id) !== requestId) return;
+
+        setTasks(previousTasks);
+
+        const current = (error.payload as { current: Task }).current;
+
+        setTasks((prev) =>
+          prev.map((task) => (task.id === current.id ? current : task)),
+        );
+
+        alert("다른 곳에서 먼저 수정된 카드입니다.");
+        return;
+      }
+
+      setTasks(previousTasks);
+      alert("태스크 수정에 실패했습니다.");
     }
   };
 
@@ -167,15 +228,16 @@ export default function Board() {
             status={col.status}
             tasks={byStatus[col.status]}
             onMove={moveTask}
+            onUpdate={handleUpdateTask}
           />
         ))}
       </div>
 
       {isCreateOpen && (
-        <TaskDialog
+        <CreateTaskDialog
           open={isCreateOpen}
           onClose={() => setIsCreateOpen(false)}
-          onCreate={handleCreate}
+          onCreate={handleCreateTask}
         />
       )}
     </>
