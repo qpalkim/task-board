@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Task, Status, Priority } from "./types";
-import { ApiError, createTask, getTasks, updateTask } from "./api/client";
+import {
+  ApiError,
+  createTask,
+  deleteTask,
+  getTasks,
+  updateTask,
+} from "./api/client";
 import { Column } from "./components/Column";
 import CreateTaskDialog from "./components/CreateTaskDialog";
 import SkeletonColumn from "./components/SkeletonColumn";
@@ -190,6 +196,20 @@ export default function Board() {
     }
   };
 
+  const handleDeleteTask = async (id: string) => {
+    const previousTasks = [...tasks];
+
+    setTasks((prev) => prev.filter((task) => task.id !== id));
+
+    try {
+      await deleteTask(id);
+    } catch {
+      setTasks(previousTasks);
+      alert("태스크 삭제에 실패했습니다.");
+      throw error;
+    }
+  };
+
   const byStatus = useMemo(() => {
     const map: Record<Status, Task[]> = {
       todo: [],
@@ -229,6 +249,7 @@ export default function Board() {
             tasks={byStatus[col.status]}
             onMove={moveTask}
             onUpdate={handleUpdateTask}
+            onDelete={handleDeleteTask}
           />
         ))}
       </div>

@@ -14,6 +14,7 @@ interface ColumnProps {
       description?: string;
     },
   ) => void;
+  onDelete: (id: string) => void;
 }
 
 export function Column({
@@ -22,6 +23,7 @@ export function Column({
   tasks,
   onMove,
   onUpdate,
+  onDelete,
 }: ColumnProps) {
   return (
     <section
@@ -37,7 +39,7 @@ export function Column({
       </h2>
       <div className="column-body">
         {tasks.map((t) => (
-          <Card key={t.id} task={t} onUpdate={onUpdate} />
+          <Card key={t.id} task={t} onUpdate={onUpdate} onDelete={onDelete} />
         ))}
       </div>
     </section>
