@@ -1,0 +1,16 @@
+.card {
+  position: relative;
+}
+
+.edit-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.card:hover .edit-button {
+  opacity: 1;
+}
