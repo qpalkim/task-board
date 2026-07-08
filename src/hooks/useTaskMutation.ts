@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { Status, Task, TaskInput } from "../types";
+import { rollbackTaskUpdate } from "../lib/taskUtils";
 import {
   ApiError,
   createTask as createTaskApi,
@@ -63,7 +64,9 @@ export function useTaskMutation({ tasks, setTasks }: UseTaskMutationProps) {
           return;
         }
 
-        setTasks(previousTasks);
+        setTasks((currentTasks) =>
+          rollbackTaskUpdate(currentTasks, previousTasks, id),
+        );
         alert("카드 이동에 실패했습니다.");
       }
     },
@@ -160,7 +163,9 @@ export function useTaskMutation({ tasks, setTasks }: UseTaskMutationProps) {
           alert("다른 곳에서 먼저 수정된 카드입니다.");
           return;
         }
-        setTasks(previousTasks);
+        setTasks((currentTasks) =>
+          rollbackTaskUpdate(currentTasks, previousTasks, id),
+        );
         alert("태스크 수정에 실패했습니다.");
       }
     },
