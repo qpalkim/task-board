@@ -2,15 +2,28 @@
   position: relative;
 }
 
-.edit-button {
+.card-actions {
   position: absolute;
-  top: 8px;
-  right: 8px;
-
+  top: 4px;
+  right: 4px;
+  display: flex;
   opacity: 0;
   transition: opacity 0.2s;
 }
 
-.card:hover .edit-button {
+.card:hover .card-actions {
   opacity: 1;
+}
+
+.icon-button {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--muted);
 }
